@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include <sys/ioctl.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "auth.h"
@@ -37,6 +38,8 @@ int main() {
     printf("\nWhats your password Gng: ");
     scanf("%s", &passwd);
 
-    login(usernamePoint, passwdPoint, 0);
+    pid_t child_pid;
+
+    login(usernamePoint, passwdPoint, &child_pid);
     return 0;
 }

@@ -3,6 +3,7 @@
 
 #include <pwd.h>
 #include <paths.h>
+#include <string.h>
 
 #include "auth.h"
 
@@ -49,7 +50,7 @@ bool login(const char *username, const char *password, pid_t *child_pid) {
         pam_setcred(pam_handle, PAM_DELETE_CRED);
         return false;
     }
-
+    
     struct passwd *pw = getpwnam(username);
     init_env(pw);
 
@@ -69,12 +70,10 @@ static int conv(int num_mesg, const struct pam_message **msg, struct pam_respons
     if (*resp == NULL) {
         return PAM_BUF_ERR;
     }
-
     int result = PAM_SUCCESS;
     for (int i=0; i < num_mesg; i++) {
         char *username;
         char *password;
-
         switch(msg[i]->msg_style) {
             case PAM_PROMPT_ECHO_ON:
                 username = ((char **) appdata_ptr)[0];
@@ -100,7 +99,6 @@ static int conv(int num_mesg, const struct pam_message **msg, struct pam_respons
         free(*resp);
         *resp=0;
     }
-
     return result;
 }
 
