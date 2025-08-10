@@ -18,7 +18,7 @@ static pam_handle_t *pam_handle;
 
 /* Helper function for login to determine and act upon any PAM errors that may happen */
 bool pam_err(int result, char* name) {
-    if (result != PAM_SECCESS) {
+    if (result != PAM_SUCCESS) {
         fprintf(stderr, "%s: %s\n", name, pam_strerror(pam_handle, result));
         end(result);
         return true;
@@ -130,7 +130,7 @@ static void set_env(char *name, char *value) {
 }
 
 bool logout() {
-    int result = pam_close_session(pam_handle);
+    int result = pam_close_session(pam_handle, 0);
     if (pam_err(result, "pam_close_session")) {
         pam_setcred(pam_handle, PAM_DELETE_CRED);
         return false;

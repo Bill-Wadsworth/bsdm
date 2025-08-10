@@ -1,5 +1,5 @@
 CC = gcc
-FLAGS = 
+FLAGS = -l pam
 
 SRC = main.c auth.c
 OBJ = ${SRC:.c=.o}

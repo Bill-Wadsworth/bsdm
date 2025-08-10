@@ -37,8 +37,6 @@ int main() {
     printf("\nWhats your password Gng: ");
     scanf("%s", &passwd);
 
-    printf("%s, %s", username, passwd);
-    
     login(usernamePoint, passwdPoint, 0);
     return 0;
 }
