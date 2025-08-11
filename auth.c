@@ -75,7 +75,7 @@ bool login(const char *username, const char *password, pid_t *child_pid) {
         printf("DONE WITH PERMS\n");
 
         chdir(pw->pw_dir);
-        char *cmd = "exec /bin/bash --login";
+        char *cmd = "exec /bin/bash --login startx";
         execl(pw->pw_shell, pw->pw_shell, "-c", cmd, NULL);
         printf("Failed to run specified commands");
         exit(1);
@@ -131,8 +131,9 @@ static void init_env(struct passwd *pw) {
 
     size_t xauthority_len = strlen(pw->pw_dir) + strlen("/.Xauthority") + 1;
     char *xauthority = malloc(xauthority_len);
-    snprintf(xauthority, xauthority_len, "%s/.Xauhtority", pw->pw_dir);
+    snprintf(xauthority, xauthority_len, "%s/.Xauthority", pw->pw_dir);
     set_env("XAUTHORITY", xauthority);
+    setenv("XAUTHORITY", xauthority, 1);
     free(xauthority);
 }
 
