@@ -1,9 +1,14 @@
 #include <security/pam_appl.h>
 #include <security/pam_misc.h>
 
+#include <sys/types.h>
+#include <grp.h>
+
 #include <pwd.h>
 #include <paths.h>
 #include <string.h>
+
+#include <stdlib.h>
 
 #include "auth.h"
 
@@ -46,20 +51,33 @@ bool login(const char *username, const char *password, pid_t *child_pid) {
     if (pam_err(result, "pam_setcred")) return false;
 
     result = pam_open_session(pam_handle, 0);
-    if (pam_err(result, "pam_open_session")) {
+    if (result != PAM_SUCCESS) {
         pam_setcred(pam_handle, PAM_DELETE_CRED);
-        return false;
     }
+    if (pam_err(result, "pam_open_session")) return false;
+    
     
     struct passwd *pw = getpwnam(username);
-    init_env(pw);
 
     *child_pid = fork();
     if (*child_pid == 0) {
+        init_env(pw);
+        //try setting some privaliges in the child
+        setenv("HOME", pw->pw_dir, 1);
+        setenv("USER", pw->pw_name, 1);
+        setenv("LOGNAME", pw->pw_name, 1);
+        setenv("SHELL", pw->pw_shell, 1);
+
+        initgroups(pw->pw_name, pw->pw_gid);
+        setgid(pw->pw_gid);
+        setuid(pw->pw_uid);
+
+        printf("DONE WITH PERMS\n");
+
         chdir(pw->pw_dir);
-        char *cmd = "exec /bin/bash --login .xinitrc";
+        char *cmd = "exec /bin/bash --login";
         execl(pw->pw_shell, pw->pw_shell, "-c", cmd, NULL);
-        printf("Failed to boot Window Manager");
+        printf("Failed to run specified commands");
         exit(1);
     }
     return true;
@@ -123,7 +141,11 @@ static void set_env(char *name, char *value) {
     size_t name_value_len = strlen(name) + strlen(value) + 2;
     char *name_value = malloc(name_value_len);
     snprintf(name_value, name_value_len, "%s=%s", name, value);
-    pam_putenv(pam_handle, name_value);
+    int result = pam_putenv(pam_handle, name_value);
+    if (result != PAM_SUCCESS) {
+        printf("FATAL ENV ERROR");
+        exit(1);
+    }
     free(name_value);
 }
 

@@ -3,6 +3,7 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "auth.h"
 
@@ -33,13 +34,26 @@ int main() {
 
     // INSECURE AND ONLY HERE FOR TESTING PURPOSES
     // DO NOT USE THIS WITH REAL DETAILS
-    printf("Wagwan, whats your username: ");
-    scanf("%s", &username);
-    printf("\nWhats your password Gng: ");
-    scanf("%s", &passwd);
+    while (1) {
 
-    pid_t child_pid;
+        printf("Wagwan, whats your username: ");
+        scanf("%s", &username);
+        printf("\nWhats your password Gng: ");
+        scanf("%s", &passwd);
 
-    login(usernamePoint, passwdPoint, &child_pid);
+        pid_t child_pid;
+
+        bool loggedIn = login(usernamePoint, passwdPoint, &child_pid);
+        if (loggedIn) {
+            int returnStatus;
+            waitpid(child_pid, &returnStatus, 0);
+            printf("CHILD TERMINATED WITH STATUS: %d \n", returnStatus);
+            logout();
+        }
+        else {
+            printf("FAILED TO AUTH, RETRY\n");
+        }
+
+    }
     return 0;
 }
