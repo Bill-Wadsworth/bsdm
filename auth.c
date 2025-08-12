@@ -133,7 +133,6 @@ static void init_env(struct passwd *pw) {
     char *xauthority = malloc(xauthority_len);
     snprintf(xauthority, xauthority_len, "%s/.Xauthority", pw->pw_dir);
     set_env("XAUTHORITY", xauthority);
-    setenv("XAUTHORITY", xauthority, 1);
     free(xauthority);
 }
 
