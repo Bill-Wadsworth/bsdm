@@ -202,8 +202,9 @@ int getUserCredentials() {
             case KEY_BACKSPACE:
                 removeCharFromInputWindow(&inputs[selectedIndex]);
                 break;
-            case KEY_DL: 
-                //delete key pressed so for right now with testing we want to halt the program
+            case 27: 
+                //escape key pressed so for right now with testing we want to halt the program
+                endwin();
                 return 1;
             default:
                 writeCharToInputWindow(&inputs[selectedIndex], c);
@@ -230,7 +231,9 @@ int main() {
 
         printf("ENTERED USERNAME: %s, PASSWORD: %s \n", usernameBuffer, passwordBuffer);
         pid_t child_pid;
-        bool loggedIn = login(usernameBuffer, passwordBuffer, &child_pid);
+        // currently this should just launch us into a bash terminal
+        char *cmd = ""; 
+        bool loggedIn = login(usernameBuffer, passwordBuffer, cmd, &child_pid);
         if (loggedIn) {
             int returnStatus;
             waitpid(child_pid, &returnStatus, 0);

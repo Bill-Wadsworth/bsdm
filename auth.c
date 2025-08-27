@@ -32,7 +32,7 @@ bool pam_err(int result, char* name) {
     return false;
 }
 
-bool login(const char *username, const char *password, pid_t *child_pid) {
+bool login(const char *username, const char *password, const char *cmd, pid_t *child_pid) {
     const char *data[2] = {username, password};
     struct pam_conv pam_conv = {
         conv, data
@@ -75,8 +75,12 @@ bool login(const char *username, const char *password, pid_t *child_pid) {
         printf("DONE WITH PERMS\n");
 
         chdir(pw->pw_dir);
-        char *cmd = "exec /bin/bash --login startx";
-        execl(pw->pw_shell, pw->pw_shell, "-c", cmd, NULL);
+        char *cmd_start = "exec /bin/bash --login";
+        //cmd cannot be more than 10000 characters
+        //want to combine the given command to run it with bash
+        char total_cmd[10000] = {0};
+        snprintf(total_cmd, sizeof(total_cmd), "%s %s", cmd_start, cmd);
+        execl(pw->pw_shell, pw->pw_shell, "-c", total_cmd, NULL);
         printf("Failed to run specified commands");
         exit(1);
     }
