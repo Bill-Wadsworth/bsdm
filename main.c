@@ -56,6 +56,7 @@ void drawAsciiArt(WINDOW *win, int y, int x, char *string);
 void mvwaddncolstr(WINDOW *win, int y, int x, char *string, int n);
 void writeCharToInputWindow(struct inputBox *box, char c);
 void removeCharFromInputWindow(struct inputBox *box);
+int getUserCredentials();
 
 void mvwaddncolstr(WINDOW *win, int y, int x, char *string, int n) {
     wmove(win, y, x);
@@ -93,10 +94,8 @@ void writeCharToInputWindow(struct inputBox *box, char c) {
     // always insert a null pointer afterwards
     // its just safer
     box->input[box->inputSize+1] = '\0';
-    // if we should hide the entered character
     if (box->showChar == false) {
-        //TODO: why is this always being run? 
-        //c = '*';
+        c = '*';
     }
     // add 4 to account for some padding on the left hand size
     mvwaddch(box->win, 1, box->inputSize+4, c);
@@ -114,14 +113,8 @@ void removeCharFromInputWindow(struct inputBox *box){
     wrefresh(box->win);
 }
 
-int main() {
-
-    // Get Window Size
-    struct winsize w;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-    ROWS = w.ws_row;
-    COLS = w.ws_col;
-
+/* This function draws up the UI and fills username and password buffer with what the user has entered */
+int getUserCredentials() {
     initscr();
     keypad(stdscr, TRUE);
     noecho();
@@ -201,7 +194,7 @@ int main() {
     // main input loop
     do {
         c = getch(); 
-
+        
         switch(c){
             case '\n':
                 selectedIndex++;
@@ -209,35 +202,35 @@ int main() {
             case KEY_BACKSPACE:
                 removeCharFromInputWindow(&inputs[selectedIndex]);
                 break;
+            case KEY_DL: 
+                //delete key pressed so for right now with testing we want to halt the program
+                return 1;
             default:
                 writeCharToInputWindow(&inputs[selectedIndex], c);
         }
     } while(selectedIndex != 2);
     endwin();
-    
-    printf("ENTERED USERNAME: %s, PASSWORD: %s \n", username_box.input, password_box.input);
+    return 0;
+}
 
-    exit(0);
+int main() {
+    // Get Window Size
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    ROWS = w.ws_row;
+    COLS = w.ws_col;
 
-    // OLD UI FROM HERE DOWN
+    while(true) {
+        int creditStatus = getUserCredentials();
 
-    char username[32];
-    const char *usernamePoint = &username[0];
-    char passwd[32];
-    const char *passwdPoint = &passwd[0];
+        if (creditStatus != 0) {
+            printf("ERROR, got credit status: %d \n", creditStatus);
+            exit(0);
+        }
 
-    // INSECURE AND ONLY HERE FOR TESTING PURPOSES
-    // DO NOT USE THIS WITH REAL DETAILS
-    while (0) {
-
-        printf("Wagwan, whats your username: ");
-        //scanf("%s", &username);
-        printf("\nWhats your password Gng: ");
-        //scanf("%s", &passwd);
-
+        printf("ENTERED USERNAME: %s, PASSWORD: %s \n", usernameBuffer, passwordBuffer);
         pid_t child_pid;
-
-        bool loggedIn = login(usernamePoint, passwdPoint, &child_pid);
+        bool loggedIn = login(usernameBuffer, passwordBuffer, &child_pid);
         if (loggedIn) {
             int returnStatus;
             waitpid(child_pid, &returnStatus, 0);
@@ -247,7 +240,7 @@ int main() {
         else {
             printf("FAILED TO AUTH, RETRY\n");
         }
-
     }
+
     return 0;
 }
