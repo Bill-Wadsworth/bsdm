@@ -42,17 +42,20 @@ const char *logo =
 int ROWS;
 int COLS;
 
+char usernameBuffer[INPUT_MAX_SIZE];
+char passwordBuffer[INPUT_MAX_SIZE];
+
 struct inputBox {
     WINDOW *win;
-    char input[INPUT_MAX_SIZE];
+    char *input;
     int inputSize;
     bool showChar; 
 };
 
 void drawAsciiArt(WINDOW *win, int y, int x, char *string);
 void mvwaddncolstr(WINDOW *win, int y, int x, char *string, int n);
-struct inputBox newInputWindow(WINDOW *win, int height, int length, int y, int x, char *name, bool showChar);
 void writeCharToInputWindow(struct inputBox *box, char c);
+void removeCharFromInputWindow(struct inputBox *box);
 
 void mvwaddncolstr(WINDOW *win, int y, int x, char *string, int n) {
     wmove(win, y, x);
@@ -82,22 +85,6 @@ void wdrawAsciiArt(WINDOW *win, int y, int x, char *string) {
     }
 }
 
-struct inputBox newInputWindow(WINDOW *win, int height, int length, int y, int x, char *name, bool showChar) {
-    WINDOW *input_box = subwin(win, height, length, y, x);
-    box(input_box, 0, 0);
-    mvwprintw(input_box, 0, 1, name);
-    touchwin(win);
-    wrefresh(input_box);
-    char inputFeild[INPUT_MAX_SIZE];
-    struct inputBox ret = {
-        input_box,
-        *inputFeild,
-        0,
-        showChar,
-    };
-    return ret;
-}
-
 void writeCharToInputWindow(struct inputBox *box, char c) {
     if (box->inputSize >= INPUT_MAX_SIZE-1) {
         return;
@@ -114,6 +101,16 @@ void writeCharToInputWindow(struct inputBox *box, char c) {
     // add 4 to account for some padding on the left hand size
     mvwaddch(box->win, 1, box->inputSize+4, c);
     box->inputSize++;
+    wrefresh(box->win);
+}
+
+void removeCharFromInputWindow(struct inputBox *box){
+    if (box->inputSize <=0 ) {
+        return; //THE buffer is empty
+    } 
+    box->inputSize--;
+    box->input[box->inputSize] = '\0';
+    mvwaddch(box->win, 1, box->inputSize+4, ' ');
     wrefresh(box->win);
 }
 
@@ -152,7 +149,7 @@ int main() {
     box(win, 0, 0);
     wrefresh(win);
 
-    //TEST DATA
+    //TODO: ACTUALLY GET THE MACHINE NAME 
     mvwprintw(win, 4, window_length/2, "SIGNING INTO LARRY");
 
     WINDOW *launch_box = subwin(win, 3, input_length, begin_y+7, begin_x+window_length/2);
@@ -164,9 +161,31 @@ int main() {
     wrefresh(launch_box);
 
 
-    struct inputBox login_box = newInputWindow(win, 3, input_length, begin_y+12, begin_x+window_length/2, " USERNAME ", true);
+    //struct inputBox username_box = newInputWindow(win, 3, input_length, begin_y+12, begin_x+window_length/2, " USERNAME ", true, usernameBuffer);
+    WINDOW *username_input_box = subwin(win, 3, input_length, begin_y+12, begin_x+window_length/2);
+    box(username_input_box, 0, 0);
+    mvwprintw(username_input_box, 0, 1, " USERNAME ");
+    touchwin(win);
+    wrefresh(username_input_box);
+    struct inputBox username_box = {
+        username_input_box,
+        usernameBuffer,
+        0,
+        true,
+    };
 
-    struct inputBox password_box = newInputWindow(win, 3, input_length, begin_y+17, begin_x+window_length/2, " PASSWORD ", false);
+    //struct inputBox password_box = newInputWindow(win, 3, input_length, begin_y+17, begin_x+window_length/2, " PASSWORD ", false, passwordBuffer);
+    WINDOW *password_input_box = subwin(win, 3, input_length, begin_y+17, begin_x+window_length/2);
+    box(password_input_box, 0, 0);
+    mvwprintw(password_input_box, 0, 1, " PASSWORD ");
+    touchwin(win);
+    wrefresh(password_input_box);
+    struct inputBox password_box = {
+        password_input_box,
+        passwordBuffer,
+        0,
+        false,
+    };
 
     //TODO: Need to ensure that ascii art is either consistently sized in neofetch repo or add some code to center the ascii art here
     wdrawAsciiArt(win, 2, 6, logo);
@@ -175,18 +194,29 @@ int main() {
     //POPULATE SOME EXAMPLE DATA
     mvwprintw(launch_box, 1, 3, "X SERVER");
     wrefresh(launch_box);
-    mvwprintw(password_box.win, 1, 4, "********");
-    wrefresh(password_box.win);
 
-
-    char b;
+    int c;
+    struct inputBox inputs[2] = {username_box, password_box};
+    int selectedIndex = 0;
+    // main input loop
     do {
-        //just wait for now before shutting down UI
-        b = getch(); 
-        // test to see if it works
-        writeCharToInputWindow(&login_box, b);
-    } while(b != 'q');
+        c = getch(); 
+
+        switch(c){
+            case '\n':
+                selectedIndex++;
+                break;
+            case KEY_BACKSPACE:
+                removeCharFromInputWindow(&inputs[selectedIndex]);
+                break;
+            default:
+                writeCharToInputWindow(&inputs[selectedIndex], c);
+        }
+    } while(selectedIndex != 2);
     endwin();
+    
+    printf("ENTERED USERNAME: %s, PASSWORD: %s \n", username_box.input, password_box.input);
+
     exit(0);
 
     // OLD UI FROM HERE DOWN
